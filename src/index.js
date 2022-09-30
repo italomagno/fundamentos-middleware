@@ -10,19 +10,84 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const {username} = request.headers;
+
+
+  const user = users.filter(user=> user.username === username)[0]
+
+  if(!user){
+    return response.status(404).json({error: "User not found"})
+  }
+
+  request.user = user
+
+  return next()
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+ const {user} = request;
+const vector = (user.todos.map((r,i)=>{
+    return i
+  }))
+  //console.log(vector,users.length,vector.length)
+
+  
+  const numberOfTodos = vector.length
+
+  console.log(user.pro === false && numberOfTodos > 10)
+  
+
+    if(user.pro === false && numberOfTodos <= 9  ){
+        return next()
+    }
+    if(user.pro === false && numberOfTodos > 9 ){
+      return response.status(403).json()
+    }
+    if(user.pro===true){
+      return next()
+    }
+    
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const {id} = request.params
+  const isUuid = validate(id)
+  if( !isUuid){
+    return response.status(400).json({error: "Is not Uuid"})
+  }
+
+  const user = users.filter(u=>u.username === username)[0]
+  console.log(user)
+
+  if(!user){
+    return response.status(404).json({error: "User already exists"})
+  }
+  
+  const todo = user.todos.filter(t=>t.id===id)[0]
+
+  if(!todo){
+    return response.status(404).json({error: "Todo not Found"})
+  }
+
+
+  request.user = user
+  request.todo = todo
+
+  return next()
+
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+  const user = users.find(user=> user.id===id)
+
+  if(!user){
+    return response.status(404).json()
+  }
+  request.user = user
+  return next()
 }
 
 app.post('/users', (request, response) => {
@@ -74,6 +139,7 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (request, response) => {
   const { title, deadline } = request.body;
   const { user } = request;
+ 
 
   const newTodo = {
     id: uuidv4(),
@@ -82,6 +148,7 @@ app.post('/todos', checksExistsUserAccount, checksCreateTodosUserAvailability, (
     done: false,
     created_at: new Date()
   };
+
 
   user.todos.push(newTodo);
 
